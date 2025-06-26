@@ -19,7 +19,8 @@ def get_audio_url(youtube_url):
         url = "https://yt-api-video-download.p.rapidapi.com/dl"
         querystring = {"id": video_id}
         headers = {
-            "X-RapidAPI-Key": 523ad5b9b0msh1287a5b840d67f8p1fcd33jsn0dd086c55ee2,
+            "X-RapidAPI-Key": "X-RapidAPI-Key": "523ad5b9b0msh1287a5b840d67f8p1fcd33jsn0dd086c55ee2",
+,
             "X-RapidAPI-Host": "yt-api-video-download.p.rapidapi.com"
         }
 
