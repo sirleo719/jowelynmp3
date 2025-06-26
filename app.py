@@ -12,6 +12,7 @@ HTML = '''
 <head><title>jowelynmp3</title></head>
 <body>
     <div style="text-align: center;">
+        <img src="/static/logo.png" width="150">
         <h2>Welcome to jowelynmp3</h2>
         <form method="post">
             YouTube URL: <input type="text" name="url" required>
@@ -19,6 +20,8 @@ HTML = '''
         </form>
         {% if filename %}
             <p>Download ready: <a href="/download/{{ filename }}">Click here</a></p>
+        {% elif error %}
+            <p style="color: red;">{{ error }}</p>
         {% endif %}
     </div>
 </body>
@@ -28,21 +31,25 @@ HTML = '''
 @app.route('/', methods=['GET', 'POST'])
 def index():
     filename = None
+    error = None
     if request.method == 'POST':
         url = request.form['url']
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'outtmpl': f'{DOWNLOAD_DIR}/%(title)s.%(ext)s',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-        }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            filename = f"{info['title']}.mp3"
-    return render_template_string(HTML, filename=filename)
+        try:
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'outtmpl': f'{DOWNLOAD_DIR}/%(title)s.%(ext)s',
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '192',
+                }],
+            }
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=True)
+                filename = f"{info['title']}.mp3"
+        except Exception as e:
+            error = str(e)
+    return render_template_string(HTML, filename=filename, error=error)
 
 @app.route('/download/<filename>')
 def download(filename):
@@ -50,3 +57,4 @@ def download(filename):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
+
