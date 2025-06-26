@@ -1,39 +1,34 @@
-from flask import Flask, request, render_template, send_file
+from flask import Flask, render_template, request
 import requests
 
 app = Flask(__name__)
 
-RAPIDAPI_KEY = "523ad5b9b0msh1287a5b840d67f8p1fcd33jsn0dd086c55ee2"  # Your actual key
+# 🔑 Replace this with your actual API key from RapidAPI
+RAPIDAPI_KEY = "523ad5b9b0msh1287a5b840d67f8p1fcd33jsn0dd086c55ee2"
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def home():
-    return render_template('index.html')
+    if request.method == 'POST':
+        video_url = request.form['url']
+        video_id = video_url.split("v=")[-1].split("&")[0] if "v=" in video_url else video_url.split("/")[-1]
 
-@app.route('/download', methods=['POST'])
-def download():
-    video_url = request.form['url']
-    
-    api_url = "https://yt-api-video-download.p.rapidapi.com/dl"
-    headers = {
-        "X-RapidAPI-Key": RAPIDAPI_KEY,
-        "X-RapidAPI-Host": "yt-api-video-download.p.rapidapi.com"
-    }
-    params = {"url": video_url}
+        api_url = "https://yt-api-video-download.p.rapidapi.com/dl"
+        querystring = {"id": video_id}
+        headers = {
+            "X-RapidAPI-Key": RAPIDAPI_KEY,
+            "X-RapidAPI-Host": "yt-api-video-download.p.rapidapi.com"
+        }
 
-    try:
-        response = requests.get(api_url, headers=headers, params=params)
-        response.raise_for_status()
+        response = requests.get(api_url, headers=headers, params=querystring)
         data = response.json()
 
-        # Try to find an audio-only stream
-        for link in data.get("link", []):
-            if "audio" in link.get("type", "").lower():
-                return f"<a href='{link['url']}' download>Click here to download MP3</a>"
+        try:
+            audio_link = data['link']['mp3']['mp3128']['url']
+            return render_template('index.html', download_link=audio_link)
+        except Exception as e:
+            return render_template('index.html', error="No audio found or error occurred.")
 
-        return "No audio found. Try a different video."
-
-    except Exception as e:
-        return f"Error: {str(e)}"
+    return render_template('index.html')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
