@@ -1,14 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>🎵 Welcome to jowelynmp3 🎵</title>
+    <title>Jowelyn MP3 Downloader</title>
 </head>
 <body>
-  <h1>🎵 Welcome to jowelynmp3 🎵</h1>
-  <form action="/download" method="post">
-    <input type="text" name="url" placeholder="Enter YouTube URL" required>
-    <button type="submit">Download MP3</button>
-  </form>
+    <h1>🎵 Welcome to Jowelyn MP3 🎵</h1>
+    <form method="post">
+        <input type="text" name="url" placeholder="Enter YouTube URL" required>
+        <button type="submit">Convert</button>
+    </form>
+
+    {% if download_link %}
+        <p>Your MP3 is ready:</p>
+        <a href="{{ download_link }}" target="_blank">Click here to download</a>
+    {% elif error %}
+        <p style="color:red;">{{ error }}</p>
+    {% endif %}
 </body>
 </html>
