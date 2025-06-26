@@ -1,4 +1,5 @@
-from flask import Flask, request, render_template_string
+from flask import Flask, render_template_string, request
+import re
 
 app = Flask(__name__)
 
@@ -6,48 +7,38 @@ HTML = '''
 <!DOCTYPE html>
 <html>
 <head>
-    <title>jowelynmp3</title>
+    <title>🎵 jowelynmp3</title>
 </head>
-<body>
-    <div style="text-align: center; font-family: Arial, sans-serif;">
-        <h1>🎵 Welcome to jowelynmp3 🎵</h1>
-        <form method="post">
-            <input type="text" name="url" placeholder="Enter YouTube URL" size="50" required>
-            <br><br>
-            <input type="submit" value="Get MP3 Link">
-        </form>
+<body style="text-align: center; font-family: sans-serif;">
+    <h2>🎵 Welcome to jowelynmp3 🎵</h2>
+    <form method="POST">
+        <input type="text" name="url" placeholder="Enter YouTube URL" style="width: 300px;" required>
+        <br><br>
+        <input type="submit" value="Convert to MP3">
+    </form>
 
-        {% if download_url %}
-            <h3>Your MP3 is ready:</h3>
-            <a href="{{ download_url }}" target="_blank">Click here to download</a>
-        {% elif error %}
-            <p style="color: red;">{{ error }}</p>
-        {% endif %}
-    </div>
+    {% if download_url %}
+        <h3>Your MP3 is ready:</h3>
+        <iframe src="{{ download_url }}" width="100%" height="100" style="border: none;"></iframe>
+    {% endif %}
 </body>
 </html>
 '''
 
 def extract_video_id(url):
-    if "v=" in url:
-        return url.split("v=")[-1].split("&")[0]
-    elif "youtu.be/" in url:
-        return url.split("youtu.be/")[-1].split("?")[0]
-    return None
+    match = re.search(r'(?:v=|\/)([0-9A-Za-z_-]{11}).*', url)
+    return match.group(1) if match else None
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     download_url = None
-    error = None
     if request.method == 'POST':
-        url = request.form.get('url')
-        video_id = extract_video_id(url)
+        yt_url = request.form['url']
+        video_id = extract_video_id(yt_url)
         if video_id:
-            download_url = f"https://yt-download.org/api/widget/mp3/{video_id}"
-        else:
-            error = "Invalid YouTube URL. Please try again."
-    return render_template_string(HTML, download_url=download_url, error=error)
+            download_url = f"https://api.vevioz.com/api/button/mp3/{video_id}"
+    return render_template_string(HTML, download_url=download_url)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
+    app.run(debug=True)
 
