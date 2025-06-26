@@ -1,6 +1,7 @@
 from flask import Flask, render_template_string, request, send_file
 import yt_dlp
 import os
+import re
 
 app = Flask(__name__)
 DOWNLOAD_DIR = "downloads"
@@ -22,8 +23,6 @@ HTML = '''
         </form>
         {% if filename %}
             <p>Download ready: <a href="/download/{{ filename }}">Click here</a></p>
-        {% elif error %}
-            <p style="color: red;">Error: {{ error }}</p>
         {% endif %}
     </div>
 </body>
@@ -33,37 +32,34 @@ HTML = '''
 @app.route('/', methods=['GET', 'POST'])
 def index():
     filename = None
-    error = None
     if request.method == 'POST':
-        url = request.form['url']
+        yt_url = request.form['url']
+        video_id_match = re.search(r"(?:v=|\/)([0-9A-Za-z_-]{11})", yt_url)
 
-        # Convert to Invidious if it's a YouTube link
+        if not video_id_match:
+            return "Invalid YouTube URL", 400
+
+        video_id = video_id_match.group(1)
+        url = f"https://yewtu.be/watch?v={video_id}"  # Or try another Invidious instance
+
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'outtmpl': f'{DOWNLOAD_DIR}/%(title)s.%(ext)s',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }],
+        }
+
         try:
-            if 'youtube.com' in url or 'youtu.be' in url:
-                if 'v=' in url:
-                    video_id = url.split('v=')[1].split('&')[0]
-                else:
-                    video_id = url.split('/')[-1].split('?')[0]
-                url = f"https://yewtu.be/watch?v={video_id}"
-
-            ydl_opts = {
-                'format': 'bestaudio/best',
-                'outtmpl': f'{DOWNLOAD_DIR}/%(title)s.%(ext)s',
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '192',
-                }],
-            }
-
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
                 filename = f"{info['title']}.mp3"
-
         except Exception as e:
-            error = str(e)
+            return f"Download failed: {str(e)}", 500
 
-    return render_template_string(HTML, filename=filename, error=error)
+    return render_template_string(HTML, filename=filename)
 
 @app.route('/download/<filename>')
 def download(filename):
